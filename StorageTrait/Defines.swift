@@ -37,3 +37,35 @@ public func async(_ queue: DispatchQueue = globalMainQueue, barrier: Bool = fals
         queue.async(execute: closure)
     }
 }
+
+public enum Logger {
+    // MARK: Case Values
+    case debug, info, warn, error
+    
+    // MARK: Properties
+    private var prefix: String {
+        switch self {
+        case .debug:
+            return "🚧 DEBUG -"
+        case .info:
+            return "✏️ INFO -"
+        case .warn:
+            return "⚠️ WARN -"
+        case .error:
+            return "❗️ERROR -"
+        }
+    }
+    
+    // MARK: Public Methods
+    public func log(message: String) {
+        if case .error = self {
+            #if DEBUG
+            assertionFailure("\(prefix) \(message)")
+            #else
+            print("\(prefix) \(message)")
+            #endif
+        } else {
+            print("\(prefix) \(message)")
+        }
+    }
+}

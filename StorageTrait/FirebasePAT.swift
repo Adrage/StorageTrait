@@ -30,22 +30,15 @@ enum DataRetrievableError: Error {
 
 // MARK: - Firebase: Realtime Database
 public protocol RealtimeDatabaseTrait {
+    var ref: DatabaseReference? { get }
     static var baseUrl: String { get }
-    static var ref: DatabaseReference? { get }
     static var referenceString: String { get }
 
     init(snapshot: DataSnapshot?)
 }
 
-extension RealtimeDatabaseTrait {
-    static var ref: DatabaseReference? {
-        let url = baseUrl + referenceString
-        return Database.database().reference(fromURL: url)
-    }
-}
-
 public protocol RealtimeDatabaseImageTrait: RealtimeDatabaseTrait {
-    static var firebaseImageRef: (reference: StorageReference, placeholderImage: UIImage?) { get }
+    var firebaseImageRef: (reference: StorageReference?, placeholderImage: UIImage?) { get }
     static var imageReferenceString: String { get }
     static var imageReference: StorageReference { get }
     static var placeHolderImage: UIImage? { get }
@@ -53,15 +46,15 @@ public protocol RealtimeDatabaseImageTrait: RealtimeDatabaseTrait {
 }
 
 extension RealtimeDatabaseImageTrait {
-    static var firebaseImageRef: (reference: StorageReference, placeholderImage: UIImage?) {
-        if let imageRefKey = Self.ref?.key {
+    public var firebaseImageRef: (reference: StorageReference?, placeholderImage: UIImage?) {
+        if let imageRefKey = ref?.key {
             let imageRef = Self.imageReference.child(imageRefKey + ".png")
             return (imageRef, Self.placeHolderImage)
         }
         return (StorageReference(), nil)
     }
 
-    static var imageReference: StorageReference {
+    public static var imageReference: StorageReference {
         let storage = Storage.storage()
         let url = storageUrl + imageReferenceString
         return storage.reference(forURL: url)
@@ -70,24 +63,49 @@ extension RealtimeDatabaseImageTrait {
 
 // Data Manager Protocol
 public protocol RealtimeDatabaseRetrievable {
-    associatedtype modelObject: RealtimeDatabaseTrait
-
-    var object: modelObject? { get set }
+    associatedtype ModelObject: RealtimeDatabaseTrait
+    typealias Completion = ((_ objects: [Self]) -> Void)?
+    
+    var object: ModelObject? { get set }
+    var ref: DatabaseReference? { get }
     static var objects: [Self] { get set }
-
-    static func getData(withCompletion: ((_ objects: [Self]) -> Void)?, failure: FailureCompletion)
-
+    static var reference: DatabaseReference? { get }
+    static func getData(withCompletion: Completion, failure: FailureCompletion)
+    
     init()
 }
 
 extension RealtimeDatabaseRetrievable {
-    init(obj: modelObject) {
+    public init(obj: ModelObject) {
         self.init()
         object = obj
     }
+    
+    public var ref: DatabaseReference? {
+        return object?.ref
+    }
+    
+    public static var reference: DatabaseReference? {
+        let url = ModelObject.baseUrl + ModelObject.referenceString
+        return Database.database().reference(fromURL: url)
+    }
 
-    static func getData(withCompletion: ((_ objects: [Self]) -> Void)?, failure: FailureCompletion) {
+    public static func getData(withCompletion completion: Completion, failure: FailureCompletion) {
+        reference?.observe(.value, with: { (snapshot) in
+            let array = snapshot.children.map { Self(obj: ModelObject(snapshot: $0 as? DataSnapshot))}
+            Self.objects = array
+            completion?(array)
+            return
+        }) { (error) in
+            failure?(error)
+        }
+    }
+}
 
+extension RealtimeDatabaseRetrievable where Self.ModelObject: RealtimeDatabaseImageTrait {
+    public var image: (reference: StorageReference?, placeholderImage: UIImage?) {
+        guard let imageRef = object?.firebaseImageRef else { return (StorageReference(), nil) }
+        return imageRef
     }
 }
 
@@ -164,7 +182,7 @@ public protocol DataRetrievable {
 
     static var objects: [Self] { get set }
 
-    static func getData(withCompletion: ((_ objects: [Self]) -> Void)?, failure: FailureCompletion)
+    static func getData(withCompletion: Completion, failure: FailureCompletion)
     static func getData(where field: String?, is whereClause: WhereClause?, to value: Any) -> Observable<[Self]>
 
     func refID() -> String?
@@ -179,7 +197,7 @@ extension DataRetrievable {
         object = obj
     }
 
-    public static func getData(withCompletion completion: (([Self]) -> Void)?, failure: FailureCompletion = nil) {
+    public static func getData(withCompletion completion: Completion, failure: FailureCompletion = nil) {
         switch Self.ModelObject.fsObjectType {
         case .collection:
             ModelObject.colRef?.getDocuments(completion: { (snapshot, error) in
@@ -222,7 +240,7 @@ extension DataRetrievable {
         return Observable.create({ observer -> Disposable in
             func handleDocuments(_ snapshot: QuerySnapshot?, with error: Error?) {
                 guard let snapshot = snapshot else {
-//                    Logger.warn.log(message: "Failed to retrieve documents: \(error.debugDescription)")
+                    Logger.warn.log(message: "Failed to retrieve documents: \(error.debugDescription)")
                     if let error = error {
                         observer.onError(error)
                     }
@@ -235,7 +253,7 @@ extension DataRetrievable {
             }
             
             guard let collectionRef = ModelObject.colRef else {
-//                Logger.warn.log(message: "Failed to retrieve collection, invalid collection ref: \(String(describing: ModelObject.collectionString))")
+                Logger.warn.log(message: "Failed to retrieve collection, invalid collection ref: \(String(describing: ModelObject.collectionString))")
                 observer.onError(DataRetrievableError.invalidCollectionReference)
                 
                 return  Disposables.create()
