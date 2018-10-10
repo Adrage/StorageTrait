@@ -6,10 +6,9 @@
 //  Copyright © 2018 CrossVision. All rights reserved.
 //
 
-import Foundation
-import UIKit
 import FirebaseFirestore
 import FirebaseStorage
+import FirebaseUI
 import RxSwift
 
 public typealias FailureCompletion = ((_ error: Error) -> Void)?
@@ -261,8 +260,12 @@ extension DataRetrievable {
 }
 
 extension DataRetrievable where Self.ModelObject: CloudFirestoreImageType {
-    public var image: (reference: StorageReference?, placeholderImage: UIImage?) {
-        guard let imageRef = object?.firebaseImageRef else { return (StorageReference(), nil) }
-        return imageRef
+    public var imageView: UIImageView {
+        let imageView = UIImageView()
+        let imageRef = object?.firebaseImageRef.reference ?? StorageReference()
+        
+        imageView.sd_setImage(with: imageRef, placeholderImage: object?.firebaseImageRef.placeholderImage)
+        
+        return imageView
     }
 }

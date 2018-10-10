@@ -6,10 +6,9 @@
 //  Copyright © 2018 CrossVision. All rights reserved.
 //
 
-import Foundation
 import FirebaseDatabase
 import FirebaseStorage
-//import FirebaseStorageUI
+import FirebaseUI
 
 // MARK: - Firebase: Realtime Database
 public protocol RealtimeDatabaseType {
@@ -83,13 +82,12 @@ extension RealtimeDatabaseRetrievable {
 }
 
 extension RealtimeDatabaseRetrievable where Self.ModelObject: RealtimeDatabaseImageType {
-    public var image: (reference: StorageReference?, placeholderImage: UIImage?) {
-        guard let imageRef = object?.firebaseImageRef else { return (StorageReference(), nil) }
-        return imageRef
+    public var imageView: UIImageView {
+        let imageView = UIImageView()
+        let imageRef = object?.firebaseImageRef.reference ?? StorageReference()
+        
+        imageView.sd_setImage(with: imageRef, placeholderImage: object?.firebaseImageRef.placeholderImage)
+        
+        return imageView
     }
-    
-    //    public var imageView: UIImageView {
-    //        let imageView = UIImageView()
-    ////        imageView.sd_
-    //    }
 }

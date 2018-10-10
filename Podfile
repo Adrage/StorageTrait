@@ -9,6 +9,7 @@ target 'StorageTrait' do
   pod "Firebase/Database"
   pod "Firebase/Firestore"
   pod "Firebase/Storage"
+  pod "FirebaseUI/Storage"
   pod "RxSwift"
 
   target 'StorageTraitTests' do
