@@ -11,7 +11,8 @@
 		4C235D1620C4576200C632CE /* StorageTraitTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C235D1520C4576200C632CE /* StorageTraitTests.swift */; };
 		4C235D1820C4576200C632CE /* StorageTrait.h in Headers */ = {isa = PBXBuildFile; fileRef = 4C235D0A20C4576200C632CE /* StorageTrait.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		4C235D2320C4579100C632CE /* Defines.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C235D2120C4579100C632CE /* Defines.swift */; };
-		4C235D2420C4579100C632CE /* FirebasePAT.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C235D2220C4579100C632CE /* FirebasePAT.swift */; };
+		4C9333F7216DB54C00754666 /* FirebaseRealtimeDatabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C9333F6216DB54C00754666 /* FirebaseRealtimeDatabase.swift */; };
+		4C9333F9216DB60400754666 /* FirebaseCloudFirestore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C9333F8216DB60400754666 /* FirebaseCloudFirestore.swift */; };
 		51CB7CC86FC6158A8E2DA39E /* Pods_StorageTraitTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AA3FB06311A90D432ABF729C /* Pods_StorageTraitTests.framework */; };
 		8E483D988AF384B10C8EBF57 /* Pods_StorageTrait.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E3EC7C579DE1D121FC35E425 /* Pods_StorageTrait.framework */; };
 /* End PBXBuildFile section */
@@ -34,7 +35,8 @@
 		4C235D1520C4576200C632CE /* StorageTraitTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageTraitTests.swift; sourceTree = "<group>"; };
 		4C235D1720C4576200C632CE /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		4C235D2120C4579100C632CE /* Defines.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Defines.swift; sourceTree = "<group>"; };
-		4C235D2220C4579100C632CE /* FirebasePAT.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FirebasePAT.swift; sourceTree = "<group>"; };
+		4C9333F6216DB54C00754666 /* FirebaseRealtimeDatabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirebaseRealtimeDatabase.swift; sourceTree = "<group>"; };
+		4C9333F8216DB60400754666 /* FirebaseCloudFirestore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirebaseCloudFirestore.swift; sourceTree = "<group>"; };
 		500C68F0377AA6BC019FF056 /* Pods-StorageTrait.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-StorageTrait.release.xcconfig"; path = "Pods/Target Support Files/Pods-StorageTrait/Pods-StorageTrait.release.xcconfig"; sourceTree = "<group>"; };
 		7A92027170CDF5E425E1CDF7 /* Pods-StorageTraitTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-StorageTraitTests.release.xcconfig"; path = "Pods/Target Support Files/Pods-StorageTraitTests/Pods-StorageTraitTests.release.xcconfig"; sourceTree = "<group>"; };
 		97B5BA75FFA45D78C91E9695 /* Pods-StorageTraitTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-StorageTraitTests.debug.xcconfig"; path = "Pods/Target Support Files/Pods-StorageTraitTests/Pods-StorageTraitTests.debug.xcconfig"; sourceTree = "<group>"; };
@@ -99,7 +101,8 @@
 			isa = PBXGroup;
 			children = (
 				4C235D2120C4579100C632CE /* Defines.swift */,
-				4C235D2220C4579100C632CE /* FirebasePAT.swift */,
+				4C9333F8216DB60400754666 /* FirebaseCloudFirestore.swift */,
+				4C9333F6216DB54C00754666 /* FirebaseRealtimeDatabase.swift */,
 				4C235D0B20C4576200C632CE /* Info.plist */,
 				4C235D0A20C4576200C632CE /* StorageTrait.h */,
 			);
@@ -313,8 +316,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				4C235D2420C4579100C632CE /* FirebasePAT.swift in Sources */,
 				4C235D2320C4579100C632CE /* Defines.swift in Sources */,
+				4C9333F9216DB60400754666 /* FirebaseCloudFirestore.swift in Sources */,
+				4C9333F7216DB54C00754666 /* FirebaseRealtimeDatabase.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

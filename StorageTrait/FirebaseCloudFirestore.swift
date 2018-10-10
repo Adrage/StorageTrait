@@ -1,14 +1,13 @@
 //
-//  FirebasePAT.swift
-//  StockAssist
+//  FirebaseCloudFirestore.swift
+//  StorageTrait
 //
-//  Created by Adrian C. Johnson on 11/13/17.
-//  Copyright © 2017 ACJ Holdings, LLC. All rights reserved.
+//  Created by Adrian C. Johnson on 10/9/18.
+//  Copyright © 2018 CrossVision. All rights reserved.
 //
 
 import Foundation
 import UIKit
-import FirebaseDatabase
 import FirebaseFirestore
 import FirebaseStorage
 import RxSwift
@@ -28,89 +27,9 @@ enum DataRetrievableError: Error {
     case invalidCollectionReference
 }
 
-// MARK: - Firebase: Realtime Database
-public protocol RealtimeDatabaseTrait {
-    var ref: DatabaseReference? { get }
-    static var baseUrl: String { get }
-    static var referenceString: String { get }
-
-    init(snapshot: DataSnapshot?)
-}
-
-public protocol RealtimeDatabaseImageTrait: RealtimeDatabaseTrait {
-    var firebaseImageRef: (reference: StorageReference?, placeholderImage: UIImage?) { get }
-    static var imageReferenceString: String { get }
-    static var imageReference: StorageReference { get }
-    static var placeHolderImage: UIImage? { get }
-    static var storageUrl: String { get }
-}
-
-extension RealtimeDatabaseImageTrait {
-    public var firebaseImageRef: (reference: StorageReference?, placeholderImage: UIImage?) {
-        if let imageRefKey = ref?.key {
-            let imageRef = Self.imageReference.child(imageRefKey + ".png")
-            return (imageRef, Self.placeHolderImage)
-        }
-        return (StorageReference(), nil)
-    }
-
-    public static var imageReference: StorageReference {
-        let storage = Storage.storage()
-        let url = storageUrl + imageReferenceString
-        return storage.reference(forURL: url)
-    }
-}
-
-// Data Manager Protocol
-public protocol RealtimeDatabaseRetrievable {
-    associatedtype ModelObject: RealtimeDatabaseTrait
-    typealias Completion = ((_ objects: [Self]) -> Void)?
-    
-    var object: ModelObject? { get set }
-    var ref: DatabaseReference? { get }
-    static var objects: [Self] { get set }
-    static var reference: DatabaseReference? { get }
-    static func getData(withCompletion: Completion, failure: FailureCompletion)
-    
-    init()
-}
-
-extension RealtimeDatabaseRetrievable {
-    public init(obj: ModelObject) {
-        self.init()
-        object = obj
-    }
-    
-    public var ref: DatabaseReference? {
-        return object?.ref
-    }
-    
-    public static var reference: DatabaseReference? {
-        let url = ModelObject.baseUrl + ModelObject.referenceString
-        return Database.database().reference(fromURL: url)
-    }
-
-    public static func getData(withCompletion completion: Completion, failure: FailureCompletion) {
-        reference?.observe(.value, with: { (snapshot) in
-            let array = snapshot.children.map { Self(obj: ModelObject(snapshot: $0 as? DataSnapshot))}
-            Self.objects = array
-            completion?(array)
-            return
-        }) { (error) in
-            failure?(error)
-        }
-    }
-}
-
-extension RealtimeDatabaseRetrievable where Self.ModelObject: RealtimeDatabaseImageTrait {
-    public var image: (reference: StorageReference?, placeholderImage: UIImage?) {
-        guard let imageRef = object?.firebaseImageRef else { return (StorageReference(), nil) }
-        return imageRef
-    }
-}
 
 // MARK: - Firebase: Cloud Firestore
-public protocol CloudFirestoreTrait {
+public protocol CloudFirestoreType {
     static var colRef: CollectionReference? { get }
     static var docRef: DocumentReference? { get }
     static var collectionDocumentPathString: String? { get }
@@ -124,7 +43,7 @@ public protocol CloudFirestoreTrait {
     init(obj: Self, refID: String)
 }
 
-extension CloudFirestoreTrait {
+extension CloudFirestoreType {
     public init(obj: Self, refID: String) {
         self = obj
         self.refID = refID
@@ -150,7 +69,7 @@ extension CloudFirestoreTrait {
     }
 }
 
-public protocol CloudFirestoreImageTrait: CloudFirestoreTrait {
+public protocol CloudFirestoreImageType: CloudFirestoreType {
     var firebaseImageRef: (reference: StorageReference?, placeholderImage: UIImage?) { get }
     static var imageReferenceString: String { get }
     static var imageReference: StorageReference { get }
@@ -158,14 +77,14 @@ public protocol CloudFirestoreImageTrait: CloudFirestoreTrait {
     static var storageUrl: String { get }
 }
 
-extension CloudFirestoreImageTrait {
+extension CloudFirestoreImageType {
     public var firebaseImageRef: (reference: StorageReference?, placeholderImage: UIImage?) {
         guard let imageRefKey = self.refID else { return (nil, nil) }
-
+        
         let imageRef = Self.imageReference.child(imageRefKey + ".png")
         return (imageRef, Self.placeHolderImage)
     }
-
+    
     public static var imageReference: StorageReference {
         let storage = Storage.storage()
         let url = storageUrl + imageReferenceString
@@ -175,19 +94,17 @@ extension CloudFirestoreImageTrait {
 
 // Data Manager Protocol
 public protocol DataRetrievable {
-    associatedtype ModelObject: CloudFirestoreTrait
+    associatedtype ModelObject: CloudFirestoreType
     typealias Completion = ((_ objects: [Self]) -> Void)?
-
+    
     var object: ModelObject? { get set }
-
-    static var objects: [Self] { get set }
-
+    
     static func getData(withCompletion: Completion, failure: FailureCompletion)
     static func getData(where field: String?, is whereClause: WhereClause?, to value: Any) -> Observable<[Self]>
-
+    
     func refID() -> String?
     func dictionaryRepresentation() -> [String : Any]
-
+    
     init()
 }
 
@@ -196,7 +113,7 @@ extension DataRetrievable {
         self.init()
         object = obj
     }
-
+    
     public static func getData(withCompletion completion: Completion, failure: FailureCompletion = nil) {
         switch Self.ModelObject.fsObjectType {
         case .collection:
@@ -206,13 +123,12 @@ extension DataRetrievable {
                     return
                 } else if let _snapshot = snapshot, !_snapshot.isEmpty {
                     let array = _snapshot.documents.map { Self(obj: ModelObject(snapshot: $0))}
-                    Self.objects = array
                     completion?(array)
                     return
                 }
-
-                let error = NSError(domain: "Data Error", code: 6, userInfo: nil)
-                Self.objects = []
+                
+                let error = NSError(domain: "com.crossvision.storagetrait", code: 6, userInfo: [
+                    NSLocalizedDescriptionKey: "Data Error"])
                 failure?(error)
                 return
             })
@@ -228,8 +144,9 @@ extension DataRetrievable {
                     completion?(array)
                     return
                 }
-
-                let error = NSError(domain: "Data Error", code: 6, userInfo: nil)
+                
+                let error = NSError(domain: "com.crossvision.storagetrait", code: 6, userInfo: [
+                    NSLocalizedDescriptionKey: "Data Error"])
                 failure?(error)
                 return
             }
@@ -248,7 +165,6 @@ extension DataRetrievable {
                 }
                 
                 let array = snapshot.documents.compactMap { Self(obj: ModelObject(snapshot: $0)) }
-                Self.objects = array
                 observer.onNext(array)
             }
             
@@ -292,21 +208,21 @@ extension DataRetrievable {
             return Disposables.create()
         })
     }
-
+    
     public func refID() -> String? {
         return object?.refID
     }
-
+    
     public func colRef() -> CollectionReference? {
         return ModelObject.colRef
     }
-
+    
     public func docRef() -> DocumentReference? {
         guard let colRef = ModelObject.colRef, let refID = object?.refID else { return nil }
-
+        
         return colRef.document(refID)
     }
-
+    
     public func addToOnlineService(completionBlock completion: ((_ ref: DocumentReference) -> Void)? = nil, failureBlock failure: FailureCompletion = nil) {
         async(globalBackgroundQueue) {
             var ref: DocumentReference? = nil
@@ -319,10 +235,6 @@ extension DataRetrievable {
                         failure?(error)
                     }
                 } else {
-                    let modelObject = ModelObject(obj: self.object!, refID: ref!.documentID)
-                    let newObject = Self(obj: modelObject)
-                    Self.objects.append(newObject)
-
                     async {
                         completion?(ref!)
                     }
@@ -330,7 +242,7 @@ extension DataRetrievable {
             }
         }
     }
-
+    
     public func deleteFromOnlineService(completionBlock completion: (() -> Void)? = nil, failureBlock failure: FailureCompletion = nil) {
         async(globalBackgroundQueue) {
             self.docRef()?.delete(completion: { error in
@@ -339,12 +251,6 @@ extension DataRetrievable {
                         failure?(error)
                     }
                 } else {
-                    for (index, item) in Self.objects.enumerated() {
-                        if item.docRef()?.documentID == self.docRef()?.documentID {
-                            Self.objects.remove(at: index)
-                        }
-                    }
-
                     async {
                         completion?()
                     }
@@ -354,7 +260,7 @@ extension DataRetrievable {
     }
 }
 
-extension DataRetrievable where Self.ModelObject: CloudFirestoreImageTrait {
+extension DataRetrievable where Self.ModelObject: CloudFirestoreImageType {
     public var image: (reference: StorageReference?, placeholderImage: UIImage?) {
         guard let imageRef = object?.firebaseImageRef else { return (StorageReference(), nil) }
         return imageRef

@@ -15,13 +15,14 @@ Pod::Spec.new do |s|
 
   s.source       = { :git => "https://github.com/Adrage/StorageTrait.git", :tag => "#{s.version}"}
   
-  s.frameworks = "FirebaseAuth", "FirebaseCore", "FirebaseDatabase", "FirebaseFirestore", "FirebaseStorage"
+  s.frameworks = "FirebaseAuth", "FirebaseCore", "FirebaseDatabase", "FirebaseFirestore", "FirebaseStorage", "FirebaseUI"
 
   s.dependency "Firebase/Auth"
   s.dependency "Firebase/Core"
   s.dependency "Firebase/Database"
   s.dependency "Firebase/Firestore"
   s.dependency "Firebase/Storage"
+  s.dependency "FirebaseUI/Storage"
   s.dependency "RxSwift"
 
   s.source_files = "StorageTrait/**/*.{swift}"
