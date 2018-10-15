@@ -11,7 +11,7 @@ import FirebaseStorage
 import FirebaseUI
 import RxSwift
 
-public typealias FailureCompletion = ((_ error: Error) -> Void)?
+public typealias FailureHandler = ((_ error: Error) -> Void)?
 
 public enum FireStoreObjectType {
     case collection
@@ -94,11 +94,11 @@ extension CloudFirestoreImageType {
 // Data Manager Protocol
 public protocol DataRetrievable {
     associatedtype ModelObject: CloudFirestoreType
-    typealias Completion = ((_ objects: [Self]) -> Void)?
+    typealias CompletionHandler = ((_ objects: [Self]) -> Void)?
     
     var object: ModelObject? { get set }
     
-    static func getData(withCompletion: Completion, failure: FailureCompletion)
+    static func getData(withCompletion: CompletionHandler, failure: FailureHandler)
     static func getData(where field: String?, is whereClause: WhereClause?, to value: Any) -> Observable<[Self]>
     
     func refID() -> String?
@@ -113,7 +113,7 @@ extension DataRetrievable {
         object = obj
     }
     
-    public static func getData(withCompletion completion: Completion, failure: FailureCompletion = nil) {
+    public static func getData(withCompletion completion: CompletionHandler = nil, failure: FailureHandler = nil) {
         switch Self.ModelObject.fsObjectType {
         case .collection:
             ModelObject.colRef?.getDocuments(completion: { (snapshot, error) in
@@ -222,7 +222,7 @@ extension DataRetrievable {
         return colRef.document(refID)
     }
     
-    public func addToOnlineService(completionBlock completion: ((_ ref: DocumentReference) -> Void)? = nil, failureBlock failure: FailureCompletion = nil) {
+    public func addToOnlineService(completionBlock completion: ((_ ref: DocumentReference) -> Void)? = nil, failureBlock failure: FailureHandler = nil) {
         async(globalBackgroundQueue) {
             var ref: DocumentReference? = nil
             ref = ModelObject.colRef?.addDocument(data:
@@ -242,7 +242,7 @@ extension DataRetrievable {
         }
     }
     
-    public func deleteFromOnlineService(completionBlock completion: (() -> Void)? = nil, failureBlock failure: FailureCompletion = nil) {
+    public func deleteFromOnlineService(completionBlock completion: (() -> Void)? = nil, failureBlock failure: FailureHandler = nil) {
         async(globalBackgroundQueue) {
             self.docRef()?.delete(completion: { error in
                 if let error = error {
@@ -260,12 +260,8 @@ extension DataRetrievable {
 }
 
 extension DataRetrievable where Self.ModelObject: CloudFirestoreImageType {
-    public var imageView: UIImageView {
-        let imageView = UIImageView()
-        let imageRef = object?.firebaseImageRef.reference ?? StorageReference()
-        
-        imageView.sd_setImage(with: imageRef, placeholderImage: object?.firebaseImageRef.placeholderImage)
-        
-        return imageView
+    public var image: (reference: StorageReference?, placeholderImage: UIImage?) {
+        guard let imageRef = object?.firebaseImageRef else { return (StorageReference(), nil) }
+        return imageRef
     }
 }

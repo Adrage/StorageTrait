@@ -20,36 +20,34 @@ public protocol RealtimeDatabaseType {
 }
 
 public protocol RealtimeDatabaseImageType: RealtimeDatabaseType {
-    var firebaseImageRef: (reference: StorageReference?, placeholderImage: UIImage?) { get }
     static var imageReferenceString: String { get }
     static var placeHolderImage: UIImage? { get }
     static var storageUrl: String { get }
 }
 
 extension RealtimeDatabaseImageType {
-    public var firebaseImageRef: (reference: StorageReference?, placeholderImage: UIImage?) {
-        guard let imageRefKey = ref?.key else { return (nil, nil) }
-        
-        let imageRef = Self.imageReference.child(imageRefKey + ".png")
-        return (imageRef, Self.placeHolderImage)
-    }
-    
     private static var imageReference: StorageReference {
         let storage = Storage.storage()
         let url = storageUrl + imageReferenceString
         return storage.reference(forURL: url)
+    }
+    
+    var firebaseImageRef: (reference: StorageReference, placeholderImage: UIImage?) {
+        guard let imageRefKey = ref?.key else { return (StorageReference(), nil) }
+        
+        let imageRef = Self.imageReference.child(imageRefKey + ".png")
+        return (imageRef, Self.placeHolderImage)
     }
 }
 
 // MARK: Data Manager Protocol
 public protocol RealtimeDatabaseRetrievable {
     associatedtype ModelObject: RealtimeDatabaseType
-    typealias Completion = ((_ objects: [Self]) -> Void)?
+    typealias CompletionHandler = ((_ objects: [Self]) -> Void)?
+    
+    static func getData(withCompletion: CompletionHandler, failure: FailureHandler)
     
     var object: ModelObject? { get set }
-    
-    static func getData(withCompletion: Completion, failure: FailureCompletion)
-    
     func dictionaryRepresentation() -> [String : Any]
     
     init()
@@ -66,7 +64,7 @@ extension RealtimeDatabaseRetrievable {
         return Database.database().reference(fromURL: url)
     }
     
-    public static func getData(withCompletion completion: Completion, failure: FailureCompletion) {
+    public static func getData(withCompletion completion: CompletionHandler = nil, failure: FailureHandler = nil) {
         reference?.observe(.value, with: { (snapshot) in
             let array = snapshot.children.map { Self(model: ModelObject(snapshot: $0 as? DataSnapshot))}
             completion?(array)
@@ -76,18 +74,16 @@ extension RealtimeDatabaseRetrievable {
         }
     }
     
-    public func saveObjectInDB() {
-        self.object?.ref?.childByAutoId().setValue(dictionaryRepresentation())
+    @discardableResult public func saveObjectInDB() -> String? {
+        guard let autoID = self.object?.ref?.childByAutoId() else { return nil }
+        autoID.setValue(dictionaryRepresentation())
+        return autoID.key
     }
 }
 
 extension RealtimeDatabaseRetrievable where Self.ModelObject: RealtimeDatabaseImageType {
-    public var imageView: UIImageView {
-        let imageView = UIImageView()
-        let imageRef = object?.firebaseImageRef.reference ?? StorageReference()
-        
-        imageView.sd_setImage(with: imageRef, placeholderImage: object?.firebaseImageRef.placeholderImage)
-        
-        return imageView
+    public var image: (reference: StorageReference, placeholderImage: UIImage?) {
+        guard let imageRef = object?.firebaseImageRef else { return (StorageReference(), nil) }
+        return imageRef
     }
 }
